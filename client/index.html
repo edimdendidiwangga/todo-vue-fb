@@ -2,552 +2,480 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Todos Apps</title>
-    <link rel="stylesheet" href="dist/semantic.min.css">
-    <script src="vue.js"></script>
-    <script src="axios.min.js"></script>
-    <script type="text/javascript" src="dist/jquery.min.js"></script>
-    <script type="text/javascript" src="dist/semantic.min.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Todos Apps</title>
+	<link rel="stylesheet" href="dist/semantic.min.css">
+	<script src="vue.js"></script>
+	<script src="axios.min.js"></script>
+	<script type="text/javascript" src="dist/jquery.min.js"></script>
+	<script type="text/javascript" src="dist/semantic.min.js"></script>
 </head>
-<style>
-    .modal-mask {
-        position: fixed;
-        z-index: 9998;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, .5);
-        display: table;
-        transition: opacity .3s ease;
-    }
-
-    .modal-wrapper {
-        display: table-cell;
-        vertical-align: middle;
-    }
-
-    .modal-container {
-        width: 300px;
-        margin: 0px auto;
-        padding: 20px 30px;
-        background-color: #fff;
-        border-radius: 2px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-        transition: all .3s ease;
-        font-family: Helvetica, Arial, sans-serif;
-    }
-
-    .modal-header h3 {
-        margin-top: 0;
-        color: #42b983;
-    }
-
-    .modal-body {
-        margin: 20px 0;
-    }
-
-    .modal-default-button {
-        float: right;
-    }
-    /*
- * The following styles are auto-applied to elements with
- * transition="modal" when their visibility is toggled
- * by Vue.js.
- *
- * You can easily play with the modal transition by editing
- * these styles.
- */
-
-    .modal-enter {
-        opacity: 0;
-    }
-
-    .modal-leave-active {
-        opacity: 0;
-    }
-
-    .modal-enter .modal-container,
-    .modal-leave-active .modal-container {
-        -webkit-transform: scale(1.1);
-        transform: scale(1.1);
-    }
-</style>
 
 <body>
-    <div id="main">
-        <nav class="ui menu teal inverted navbar page grid" style="margin-bottom: 0px">
-            <a href="" class="brand item"><h2>{{ navbar }}</h2></a>
+	<div id="main">
+		<nav class="ui menu teal inverted navbar page grid" style="margin-bottom: 0px">
+			<a href="" class="brand item"><h2>{{ navbar }}</h2></a>
+			<div class="right menu" v-if="login">
+				<div class="item"><button class="ui green button" id="btnLogin">Sign in</button></div>
+				<div class="item"><button class="ui orange button" id="btnSignup">Sign up</button></div>
+				<div class="item"><a class="ui primary button" v-on:click="loginFB">SignIn FB</a></div>
+			</div>
+			<div class="right menu" v-else>
+				<div class="item">
+					<h3>Welcome, {{ username }}</h3></div>
+				<div class="item"><button class="ui red button" v-on:click="signOut">Sign out</button></div>
+			</div>
+		</nav>
+		<div class="ui hidden divider"></div>
 
-            <div class="right menu" v-if="login">
-                <div class="item"><button class="ui green button" id="btnLogin">Sign in</button></div>
-                <div class="item"><button class="ui orange button" id="btnSignup">Sign up</button></div>
-                <div class="item"><a class="ui primary button" v-on:click="loginFB">SignIn FB</a></div>
+		<div class="ui items segment padtop-6 container" v-if="listTodos">
+			<div class="ui right aligned segment">
+				<button class="ui green button" v-on:click="addTodo">Add Todo</button>
+			</div>
+			<table id="example" class="ui celled table" cellspacing="0" width="100%">
+				<thead>
+					<tr>
+						<th>Task</th>
+						<th>Completed</th>
+						<th>Reminder</th>
+						<th>CreatedAt</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="todo in listTodos " track-by="$index" v-if="listTodos != 0 ">
+						<td>{{ todo.task }}</td>
+						<td>{{ todo.is_completed }}</td>
+						<td>{{ todo.reminder }}</td>
+						<td>{{ todo.createdAt }}</td>
+						<td><a class="ui primary button" v-on:click="editTodos(todo._id)">Edit</a> | <a class="ui red button" v-on:click="deleteConfirm(todo._id)">Delete</a></td>
+					</tr>
+					<tr v-if="listTodos.length == 0">
+						<td><h2 class="ui centered header">Task Empty :-()<h2></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<h1 class="ui centered header" v-else>Todos FireFox Apps </h1>
+		<!-- TEST -->
 
-            </div>
-            <div class="right menu" v-else>
-                <div class="item">
-                    <h3>Welcome, {{ username }}</h3></div>
+		<div class="ui small modal four grid" id="modalLogin">
+			<i class="close icon"></i>
+			<div class="ui center aligned header">
+				<h3>Sign in</h3>
+			</div>
+			<div class="ui content grid container">
+				<div class="content">
+					<div class="ui form fluid">
+						<div class="field">
+							<label>Username</label>
+							<input class="ui left action fluid icon input" v-model="username" placeholder="Username" type="text">
+						</div>
+						<div class="field">
+							<label>Password</label>
+							<input v-model="password" placeholder="Password" type="password">
+						</div>
 
-                <div class="item"><button class="ui red button" v-on:click="signOut">Sign out</button></div>
-            </div>
+						<button id="btnSubmitLogin" class="ui button green" v-on:click="onLogin">Sign in</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        </nav>
-        <div class="ui grid">
-            <div class="row">
+		<div class="ui small modal four grid" id="modalSignup">
+			<i class="close icon"></i>
+			<div class="ui center aligned header">
+				<h3>Sign up</h3>
+			</div>
+			<div class="ui doubling stackable content grid container">
+				<div class="content">
+					<div class="ui fluid form">
+						<div class=" field">
+							<label>Name</label>
+							<input class="ui left action fluid icon input" v-model="nameR" placeholder="Name" type="text">
+						</div>
+						<div class=" field">
+							<label>Username</label>
+							<input v-model="username" placeholder="Username" type="text">
+						</div>
+						<div class="field">
+							<label>Password</label>
+							<input v-model="password" placeholder="Password" type="password">
+						</div>
+						<div class=" field">
+							<label>Email</label>
+							<input v-model="emailR" placeholder="Email" type="email">
+						</div>
+						<button id="btnSubmitRegister" class="ui button blue" v-on:click="onRegister">Sign up</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-            </div>
-        </div>
+		<div class="ui small modal four grid" id="modalAddTodo">
+			<i class="close icon"></i>
+			<div class="ui center aligned header">
+				<h3>Add Todo</h3>
+			</div>
+			<div class="ui doubling stackable content grid container">
+				<div class="content">
+					<div class="ui fluid form">
+						<div class="field">
+							<label>Task</label>
+							<input class="ui left action fluid icon input" v-model="task" placeholder="Name" type="text">
+						</div>
+						<div class="field">
+							<div class="ui checkbox">
+								<input v-model="is_completed" name="is_completed" type="checkbox" value="true" checked>
+								<label>Completed</label>
+							</div>
+						</div>
+						<div class="field">
+							<label>Reminder</label>
+							<input v-model="reminder" type="text" value="">
+						</div>
 
+						<button class="ui button blue" v-on:click="insertTodo">Submit</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <div class="ui hidden divider"></div>
+		<div class="ui small modal four grid" id="modalEditTodo">
+			<i class="close icon"></i>
+			<div class="ui center aligned header">
+				<h3>Edit Todo</h3>
+			</div>
+			<div class="ui doubling stackable content grid container">
+				<div class="content">
+					<div class="ui fluid form">
+						<div class="field">
+							<label>Task</label>
+							<input class="ui left action fluid icon input" v-model="editDataTodo.task" placeholder="Name" type="text">
+						</div>
 
+						<div class="field">
+							<div class="ui checkbox">
+								<input v-model="editDataTodo.is_completed" type="checkbox" :checked="editDataTodo.is_completed">
+								<label>Completed</label>
+							</div>
+						</div>
+						<div class="field">
+							<label>Reminder</label>
+							<input v-model="editDataTodo.reminder" type="text" value="">
+						</div>
+						<button class="ui button blue" v-on:click="updateTodo">Submit</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <div class="ui center aligned segment">
-            <button class="ui green button" id="addTodoModal">Add Todo</button>
-        </div>
-        <!-- <button class="ui green button editTodoModal" data-idTodo="123" data-task="jdjd" data-isCompleted="true" data-userId="1234">edit Todo</button> -->
-        <div class="ui items segment padtop-6 container" v-if="listTodos.length !== 0">
+		<div class="ui basic modal" id="deleteModalTodo">
+	    <div class="ui icon header">
+	      <i class="trash outline icon"></i> Remove Todo
+	    </div>
+	    <div class="ui centered header content">
+	      <p>Are you sure delete this todo?</p>
+	      <input type="hidden" v-model="deleteDataTodo.id">
+	    </div>
+	    <div class="actions">
+	      <div class="ui red basic cancel inverted button">
+	        <i class="remove icon"></i> No
+	      </div>
+	      <div class="ui green ok inverted button" v-on:click="deleteTodo">
+	        <i class="checkmark icon"></i> Yes
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	<script type="text/javascript" src="dist/jquery.min.js"></script>
+	<script type="text/javascript" src="dist/semantic.min.js"></script>
+	<script>
+		$(document).ready(function() {
+			$('#btnSubmitTodo').click(function() {
+				$('#modalAddTodo').modal('hide')
+			})
+		});
+	</script>
+	<script>
+		$(document).ready(function() {
+			$('.ui.dropdown').dropdown();
+			$('#btnLogin').click(function() {
+				$('#modalLogin').modal('show')
+			})
+			$('#btnSignup').click(function() {
+				$('#modalSignup').modal('show')
+			})
+			$('#btnSubmitLogin').click(function() {
+				$('#modalLogin').modal('hide')
+			})
+			$('#btnSubmitRegister').click(function() {
+				$('#modalSignup').modal('hide')
+			})
 
-
-
-
-            <table id="example" class="ui celled table" cellspacing="0" width="100%">
-                <thead>
-                    <tr>
-                        <th>Task</th>
-                        <th>Completed</th>
-                        <th>User</th>
-                        <th>Action</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- | orderBy 'createdAt' desc -->
-                    <tr v-for="todo in listTodos " track-by="$index">
-                        <td>{{ todo.task }}</td>
-                        <td>{{ todo.is_completed }}</td>
-                        <td>{{ todo.user_id[0].name }}</td>
-                        <td><a class="ui primary button show-modal" @click="showModal = true">Edit</a> | <a class="ui red button" v-on:click="deleteTodo(todo.user_id[0]._id)">Delete</a></td>
-                      <modal v-if="showModal" @close="showModal = false">
-                    </tr>
-                    <!-- <tr v-if="listTodos">
-                        <td>The todo list is empty</td>
-                    </tr> -->
-                </tbody>
-            </table>
-
-            <!-- use the modal component, pass in the prop -->
-
-        </div>
-
-        <!-- TEST -->
-
-        <div class="ui small modal four grid" id="modalLogin">
-            <i class="close icon"></i>
-            <div class="ui center aligned header">
-                <h3>Sign in</h3>
-            </div>
-
-            <div class="ui content grid container">
-
-                <div class="content">
-                    <div class="ui form fluid">
-                        <div class="field">
-                            <label>Username</label>
-                            <input class="ui left action fluid icon input" v-model="username" placeholder="Username" type="text">
-                        </div>
-                        <div class="field">
-                            <label>Password</label>
-                            <input v-model="password" placeholder="Password" type="password">
-                        </div>
-
-                        <button id="btnSubmitLogin" class="ui button green" v-on:click="onLogin">Sign in</button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="ui small modal four grid" id="modalSignup">
-            <i class="close icon"></i>
-            <div class="ui center aligned header">
-                <h3>Sign up</h3>
-            </div>
-
-            <div class="ui doubling stackable content grid container">
-                <div class="content">
-                    <div class="ui fluid form">
-                        <div class=" field">
-                            <label>Name</label>
-                            <input class="ui left action fluid icon input" v-model="nameR" placeholder="Name" type="text">
-                        </div>
-                        <div class=" field">
-                            <label>Username</label>
-                            <input v-model="username" placeholder="Username" type="text">
-                        </div>
-                        <div class="field">
-                            <label>Password</label>
-                            <input v-model="password" placeholder="Password" type="password">
-                        </div>
-                        <div class=" field">
-                            <label>Email</label>
-                            <input v-model="emailR" placeholder="Email" type="email">
-                        </div>
-                        <button id="btnSubmitRegister" class="ui button blue" v-on:click="onRegister">Sign up</button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="ui small modal four grid" id="modalAddTodo">
-            <i class="close icon"></i>
-            <div class="ui center aligned header">
-                <h3>Add Todo</h3>
-            </div>
-
-            <div class="ui doubling stackable content grid container">
-                <div class="content">
-                    <div class="ui fluid form">
-                        <div class="field">
-                            <label>Task</label>
-                            <input class="ui left action fluid icon input" v-model="task" placeholder="Name" type="text">
-                        </div>
-                        <div class="field">
-                            <div class="ui checkbox">
-                                <input v-model="is_completed" name="is_completed" type="checkbox" value="true" checked>
-                                <label>Completed</label>
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label>User</label>
-                            <input v-model="user_id" type="text" value="">
-                        </div>
-                        <button id="btnSubmitTodo" class="ui button blue" v-on:click="insertTodo">Submit</button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-
-        <!-- <div class="ui small modal four grid" id="modalEditTodo">
-            <i class="close icon"></i>
+			$('#btnSubmitTodo').click(function() {
+				$('#modalAddTodo').modal('hide')
+			})
+		});
+	</script>
 
 
-        </div> -->
 
-    </div>
-    <script type="text/javascript" src="dist/jquery.min.js"></script>
-    <script type="text/javascript" src="dist/semantic.min.js"></script>
+	<script>
 
-    <script>
-        $(document).ready(function() {
-            $('.ui.dropdown').dropdown();
-            $('#btnLogin').click(function() {
-                $('#modalLogin').modal('show')
-            })
-            $('#btnSignup').click(function() {
-                $('#modalSignup').modal('show')
-            })
+		var app = new Vue({
+			el: '#main',
+			data: {
+				showModal: false,
+				message: '',
+				navbar: 'Todos Apps',
+				username: '',
+				password: '',
+				nameR: '',
+				emailR: '',
+				task: '',
+				is_completed: '',
+				reminder: '',
+				editDataTodo: {
+					id:'',
+					task: '',
+					is_completed: '',
+					reminder: ''
+				},
+				deleteDataTodo: {
+					id: ''
+				},
+				login: true,
+				listTodos: ''
+			},
+			methods: {
+				onLogin: function() {
+					let self = this
+					axios.post('http://localhost:3000/auth/signin', {
+							username: self.username,
+							password: self.password
+						})
+						.then(response => {
+							if (response.data.hasOwnProperty('error')) {
+								self.message = response.data.error.errmsg
+							} else {
+								self.login = false;
+								let token = localStorage.setItem('token', response.data);
+								console.log('token ', token)
+								self.getListTodos()
+							}
+						})
+						.catch(error => {
+							alert('error')
+							console.log(error)
+						})
+				},
+				onRegister: function() {
+					let self = this
+					axios.post('http://localhost:3000/auth/signup', {
+							name: self.nameR,
+							email: self.emailR,
+							username: self.username,
+							password: self.password,
+							role: 'client'
+						})
+						.then(response => {
+							if (response.data.hasOwnProperty('err')) {
+								console.log(response.data);
+								console.log(err);
+							} else {
+								self.onLogin()
+								console.log(response);
+							}
+						})
+						.catch(err => {
+							alert('error')
+						})
+				},
 
-            $('#btnSubmitLogin').click(function() {
-                $('#modalLogin').modal('hide')
-            })
-            $('#btnSubmitRegister').click(function() {
-                $('#modalSignup').modal('hide')
-            })
-            $('#addTodoModal').click(function() {
-                $('#modalAddTodo').modal('show')
-            })
-            $('#btnSubmitTodo').click(function() {
-                $('#modalAddTodo').modal('hide')
-            })
-            $('.editTodoModal').click(function() {
-                $('#modalEditTodo').modal('show')
-            })
-            $('#btnUpdateTodo').click(function() {
-                $('.modalEditTodo').modal('hide')
-            })
-        });
-    </script>
+				signOut: function() {
+					localStorage.removeItem('token');
+					let self = this
+					self.login = true;
+					FB.logout(function(response) {
+						console.log('sudah logout');
+					});
+					window.location.href = 'index.html'
+				},
+				getListTodos: function() {
+					let self = this
+					axios.get('http://localhost:3000/todos/', {
+							headers: {
+								token: localStorage.getItem('token')
+							}
+						})
+						.then(response => {
+							if (response.config.headers.token == null) {
+								alert('Please login!')
+							} else {
+								self.listTodos = '';
+								self.listTodos = response.data
+								console.log('todonya ', response.data)
+							}
+						})
+						.catch(error => {
+							alert('Please login!')
+							console.log("Please login!")
+						})
+				},
+				addTodo: function(){
+					$('#modalAddTodo').modal('show')
+				},
+				insertTodo: function() {
+					let self = this
+		      axios.post('http://localhost:3000/todos/', {
+						task: self.task,
+						is_completed: self.is_completed,
+						reminder: self.reminder
+		        }, {
+		          headers: {
+		            token: localStorage.getItem('token')
+		          }
+		        })
+		        .then(response => {
+		          if (response.config.headers.token == null) {
+		            alert('Please login!')
+		          } else {
+								$('#modalAddTodo').modal('hide')
+		            self.getListTodos()
 
-    <script type="text/x-template" id="modal-template">
-        <transition name="modal">
-            <div class="modal-mask">
-                <div class="modal-wrapper">
-                    <div class="modal-container">
+		          }
+		        })
+		        .catch(error => {
+		          alert('Please login!')
+		          console.log("Please login!")
+		        })
+				},
+				deleteConfirm: function(id){
+					this.deleteDataTodo.id = id
+		      $('#deleteModalTodo').modal('show')
+				},
+				deleteTodo: function() {
+					let self = this
+					axios.delete(`http://localhost:3000/todos/${self.deleteDataTodo.id}`, {
+							headers: {
+								token: localStorage.getItem('token')
+							}
+						})
+						.then(response => {
+							 $('#deleteModalTodo').modal('hide')
+							self.getListTodos()
+						})
+						.catch(error => {
+							alert('error')
+							console.log(error)
+						})
+				},
+				editTodos: function(id){
+					this.editDataTodo.id = id;
+					let self = this
+					axios.get(`http://localhost:3000/todos/${self.editDataTodo.id}`, {
+							headers: {
+								token: localStorage.getItem('token')
+							}
+						})
+						.then(response => {
+							self.editDataTodo.task = response.data.task
+		          self.editDataTodo.is_completed = response.data.is_completed
+							self.editDataTodo.reminder = response.data.reminder
+							 $('#modalEditTodo').modal('show')
+						})
+						.catch(error => {
+							alert('error')
+							console.log(error)
+						})
 
-                        <!-- <div class="modal-header">
-                            <slot name="header">
+				},
+				updateTodo: function() {
+					let self = this
+		      axios.put('http://localhost:3000/todos/'+self.editDataTodo.id, {
+						task: self.editDataTodo.task,
+						is_completed: self.editDataTodo.is_completed,
+						reminder: self.editDataTodo.reminder
+		        }, {
+		          headers: {
+		            token: localStorage.getItem('token')
+		          }
+		        })
+		        .then(response => {
+		          if (response.config.headers.token == null) {
+		            alert('Please login!')
+		          } else {
+								$('#modalEditTodo').modal('hide')
+		            self.getListTodos()
 
-                            </slot>
-                        </div>
-
-                        <div class="modal-body">
-                            <slot name="body">
-                                default body
-                            </slot>
-                        </div> -->
-                        <div class="ui center aligned header">
-                            <h3>Edit Todo</h3>
-                        </div>
-
-                        <div class="ui doubling stackable content grid container">
-                            <div class="content">
-                                <div class="ui fluid form">
-                                    <div class="field">
-                                        <label>Task</label>
-                                        <input id="task" class="ui left action fluid icon input" v-model="task" placeholder="Name" type="text">
-                                    </div>
-                                    <div class="field">
-                                        <div class="ui checkbox">
-                                            <input id="isCompleted" v-model="is_completed" name="is_completed" type="checkbox" value="true" checked>
-                                            <label>Completed</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="field">
-                                        <label>User</label>
-                                        <input id="userId" v-model="user_id" type="text" value="">
-                                    </div>
-                                    <input id="id_todo" v-model="id_todo" type="text" value="">
-                                    <button id="btnUpdateTodo" class="ui button blue" v-on:click="updateTodo">Update</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer">
-                            <slot name="footer">
-
-                                <button class="modal-default-button" @click="$emit('close')">
-              Close
-            </button>
-                            </slot>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </transition>
-    </script>
-
-    <script>
-        Vue.component('modal', {
-            template: '#modal-template',
-            data: function(){
-              return {
-                task_edit: '',
-                is_completed_edit: '',
-                user_id_edit: '',
-                id_todo: ''
-              }
-            }
-        })
-
-        var app = new Vue({
-            el: '#main',
-            data: {
-                showModal: false,
-                message: '',
-                navbar: 'Todos Apps',
-                username: '',
-                id_user: '',
-                password: '',
-                nameR: '',
-                emailR: '',
-                task: '',
-                is_completed: '',
-                user_id: '',
-
-                login: true,
-                listTodos: ''
-            },
-            methods: {
-                onLogin: function() {
-                    let self = this
-                    axios.post('http://localhost:3000/auth/signin', {
-                            username: self.username,
-                            password: self.password
-                        })
-                        .then(response => {
-                            if (response.data.hasOwnProperty('error')) {
-                                self.message = response.data.error.errmsg
-                            } else {
-                                console.log(response)
-                                self.login = false;
-                                localStorage.setItem('token', response.data);
-                                self.getListTodos()
-                            }
-                        })
-                        .catch(error => {
-                            alert('error')
-                            console.log(error)
-                        })
-                },
-                onRegister: function() {
-                    let self = this
-                    axios.post('http://localhost:3000/auth/signup', {
-                            name: self.nameR,
-                            email: self.emailR,
-                            username: self.username,
-                            password: self.password,
-                            role: 'client'
-                        })
-                        .then(response => {
-                            if (response.data.hasOwnProperty('err')) {
-                                console.log(response.data);
-                                console.log(err);
-                            } else {
-                                self.onLogin()
-                                console.log(response);
-                            }
-                        })
-                        .catch(err => {
-                            alert('error')
-                        })
-                },
-
-                signOut: function() {
-                    localStorage.removeItem('token');
-                    let self = this
-                    self.login = true;
-                    FB.logout(function(response) {
-                        console.log('sudah logout');
-                    });
-                    window.location.href = 'index.html'
-                },
-                getListTodos: function() {
-                    let self = this
-                    axios.get('http://localhost:3000/todos/', {
-                            headers: {
-                                token: localStorage.getItem('token')
-                            }
-                        })
-                        .then(response => {
-                            if (response.config.headers.token == null) {
-                                alert('Please login!')
-                            } else {
-                                self.listTodos = '';
-                                self.listTodos = response.data
-                                console.log('todonya ', response.data)
-                            }
-                        })
-                        .catch(error => {
-                            alert('Please login!')
-                            console.log("Please login!")
-                        })
-                },
-                insertTodo: function() {
-                    let self = this
-                    axios.post('http://localhost:3000/todos/', {
-                            task: self.task,
-                            is_completed: self.is_completed,
-                            user_id: self.user_id
-                        }, {
-                            headers: {
-                                token: localStorage.getItem('token')
-                            }
-                        })
-                        .then(response => {
-                            if (response.data.hasOwnProperty('error')) {
-                                self.message = response.data.error.errmsg
-                                alert('you must login')
-                            } else {
-                                console.log(response)
-                                self.getListTodos()
-                            }
-                        })
-                        .catch(error => {
-                            alert('error')
-                            console.log(error)
-                        })
-                },
-                deleteTodo: function(id) {
-                  //alert()
-                    let self = this
-                    axios.delete(`http://localhost:3000/todos/590f65f3e58c7f100c6fe42c`, {
-                            headers: {
-                                token: localStorage.getItem('token')
-                            }
-                        })
-                        .then(response => {
-                            console.log(id)
-                            self.getListTodos()
-                        })
-                        .catch(error => {
-                            alert('error')
-                            console.log(error)
-                        })
-                },
-                updateTodo: function() {
-                    alert('update')
-                },
-                loginFB: function() {
-                    let self = this
-                    FB.login(function(response) {
-                        if (response.status === 'connected') {
-                            FB.api('/me', 'GET', {
-                                fields: 'first_name,last_name,name,id'
-                            }, function(response) {
-                                if (response) {
-                                    self.name = response.name
-                                    self.username = response.first_name + "_" + response.last_name
-                                    self.password = response.name
-                                    self.email = `${response.name}@facebook.com`
-                                    self.onRegister()
-                                } else {
-                                    console.log('belum login')
-                                }
-                            });
-                        } else if (response.status === 'not_authorized') {
-                            console.log('We are not logged in.')
-                        } else {
-                            console.log('You are not logged into Facebook.');
-                        }
-                    }, {
-                        scope: 'email'
-                    });
-                }
-            },
-            created: function() {}
-        })
-    </script>
-    <script>
-        // initialize and setup facebook js sdk
-        window.fbAsyncInit = function() {
-            FB.init({
-                appId: '184769522044031',
-                xfbml: true,
-                version: 'v2.5'
-            });
-            FB.getLoginStatus(function(response) {
-                if (response.status === 'connected') {
-                    alert('We are connected.');
-                } else if (response.status === 'not_authorized') {
-                    console.log('We are not logged in.')
-                } else {
-                    console.log('You are not logged into Facebook.');
-                }
-            });
-        };
-        (function(d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {
-                return;
-            }
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "//connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-
-        // login with facebook with extra permissions
-    </script>
+		          }
+		        })
+		        .catch(error => {
+		          alert('Please login!')
+		          console.log("Please login!")
+		        })
+				},
+				loginFB: function() {
+					let self = this
+					FB.login(function(response) {
+						if (response.status === 'connected') {
+							FB.api('/me', 'GET', {
+								fields: 'first_name,last_name,name,id'
+							}, function(response) {
+								if (response) {
+									self.name = response.name
+									self.username = response.first_name + "_" + response.last_name
+									self.password = response.name
+									self.email = `${response.name}@facebook.com`
+									self.onRegister()
+								} else {
+									console.log('belum login')
+								}
+							});
+						} else if (response.status === 'not_authorized') {
+							console.log('We are not logged in.')
+						} else {
+							console.log('You are not logged into Facebook.');
+						}
+					}, {
+						scope: 'email'
+					});
+				}
+			},
+			created: function() {}
+		})
+	</script>
+	<script>
+		window.fbAsyncInit = function() {
+			FB.init({
+				appId: '184769522044031',
+				xfbml: true,
+				version: 'v2.5'
+			});
+			FB.getLoginStatus(function(response) {
+				if (response.status === 'connected') {
+					alert('We are connected.');
+				} else if (response.status === 'not_authorized') {
+					console.log('We are not logged in.')
+				} else {
+					console.log('You are not logged into Facebook.');
+				}
+			});
+		};
+		(function(d, s, id) {
+			var js, fjs = d.getElementsByTagName(s)[0];
+			if (d.getElementById(id)) {
+				return;
+			}
+			js = d.createElement(s);
+			js.id = id;
+			js.src = "//connect.facebook.net/en_US/sdk.js";
+			fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+	</script>
 </body>
 
 </html>

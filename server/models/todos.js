@@ -5,9 +5,12 @@ const Schema = mongoose.Schema
 const TodoSchema = new Schema({
   task : String,
   is_completed : Boolean,
-  user_id : [{
+  user_id : {
     type: Schema.Types.ObjectId, ref: 'User'
-  }],
+  },
+	reminder : {
+    type: String
+  },
   createdAt : {
     type: Date,
     default: Date.now
